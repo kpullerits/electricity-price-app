@@ -24,7 +24,15 @@ app_ui <- function(request) {
                  box(
                    width = NULL,
                    status = "warning",
-                   title = span(icon("calendar"), "Date options"),
+                   title = span(icon("bolt"), icon("database"), "Electricity data"),
+                   selectInput("electricity_zone",
+                               label = span(icon("border-all"), "Zone"),
+                               choices = c("SE1" = "SE1",
+                                           "SE2" = "SE2",
+                                           "SE3" = "SE3",
+                                           "SE4" = "SE4"),
+                               selected = "SE4",
+                               multiple = FALSE),
                    uiOutput("daterange")
                  ),
                  box(
@@ -34,7 +42,7 @@ app_ui <- function(request) {
                    uiOutput("usage_time"),
                    radioButtons(
                      "limit_search",
-                     "Limit best time search to next hour and onwards",
+                     label = span(icon("unlock-keyhole"), "Limit best time search to next hour and onwards"),
                      c("Yes" = TRUE,
                        "No" = FALSE),
                      selected = TRUE
@@ -45,7 +53,7 @@ app_ui <- function(request) {
           width = 9,
           box(
             width = NULL,
-            title = "Electricity price per hour",
+            title = span(icon("plug"), icon("sack-dollar"), "Electricity price per hour"),
             girafeOutput("plot_price",
                          width = "100%") %>%
               withSpinner(type = 6)

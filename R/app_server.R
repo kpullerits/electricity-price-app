@@ -26,6 +26,7 @@ app_server <- function(input, output, session) {
 
   output$daterange <- renderUI({
     req(system_time())
+    req(input$electricity_zone)
 
     start_val <- lubridate::date(system_time())
     end_val <- lubridate::date(system_time())
@@ -38,16 +39,23 @@ app_server <- function(input, output, session) {
     day = date_string[[1]][3]
     if(
       hour_of_day >= 13 &
-      httr::GET(paste0("https://www.elprisetjustnu.se/api/v1/prices/", year,
-                       "/",
-                       month,
-                       "-",
-                       day,
-                       "_SE4.json")
+      httr::GET(
+        paste0(
+          "https://www.elprisetjustnu.se/api/v1/prices/",
+          year,
+          "/",
+          month,
+          "-",
+          day,
+          "_",
+          input$electricity_zone,
+          ".json"
+        )
       )$status_code == 200){
       end_val <- end_val + 1
     }
-    dateRangeInput("daterange", label = "Pick dates",
+    dateRangeInput("daterange",
+                   label = span(icon("calendar"),"Date range"),
                    start = start_val,
                    end = end_val,
                    min = "2022-11-01",
@@ -77,7 +85,7 @@ app_server <- function(input, output, session) {
 
     numericInput(
       "usage_time",
-      label = "Dishwasher run time (hours)",
+      label = span(icon("stopwatch"), "Dishwasher run time (hours)"),
       value = 2,
       min = 1,
       max = max_val_usage_time(),
@@ -109,6 +117,7 @@ app_server <- function(input, output, session) {
 
   df_price <- reactive({
     req(input$daterange)
+    req(input$electricity_zone)
 
     if(input$daterange[1] > input$daterange[2]){
       showModal(
@@ -136,12 +145,18 @@ app_server <- function(input, output, session) {
       month = date_string[[1]][2]
       day = date_string[[1]][3]
 
-      res = httr::GET(paste0("https://www.elprisetjustnu.se/api/v1/prices/", year,
-                             "/",
-                             month,
-                             "-",
-                             day,
-                             "_SE4.json")
+      res = httr::GET(
+        paste0(
+          "https://www.elprisetjustnu.se/api/v1/prices/",
+          year,
+          "/",
+          month,
+          "-",
+          day,
+          "_",
+          input$electricity_zone,
+          ".json"
+        )
       )
       data <- rawToChar(res$content)
       df_list[[i]] <- as_tibble(jsonlite::fromJSON(data))
