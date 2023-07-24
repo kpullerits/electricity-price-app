@@ -29,13 +29,7 @@ app_ui <- function(request) {
                      box(width = NULL,
                          status="danger",
                          title = span(icon("soap"), "Dishwasher options"),
-                         numericInput(
-                       "usage_time",
-                       label = "Dishwasher run time (hours)",
-                       value = 2,
-                       min = 1,
-                       step = 1
-                     ),
+                         uiOutput("usage_time"),
                      radioButtons(
                        "limit_search",
                        "Limit best time search to next hour and onwards",

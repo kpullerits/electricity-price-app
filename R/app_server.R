@@ -54,6 +54,58 @@ app_server <- function(input, output, session) {
                    max = end_val,
                    weekstart = 1)
   })
+  max_val_usage_time <- reactive({
+    req(input$daterange)
+    req(df_price())
+    req(input$limit_search)
+
+    df <- df_price()
+    if(input$limit_search){
+      df <- df %>%
+        filter(time_start > system_time())
+    }
+
+    max_time <- as.integer(difftime(max(df$time_start), min(df$time_start), units="hours")) + 1
+    return(max_time)
+  })
+
+  output$usage_time <- renderUI({
+    req(input$daterange)
+    req(df_price())
+    req(input$limit_search)
+    req(max_val_usage_time())
+
+    numericInput(
+      "usage_time",
+      label = "Dishwasher run time (hours)",
+      value = 2,
+      min = 1,
+      max = max_val_usage_time(),
+      step = 1
+    )
+  })
+
+  observe({
+    req(input$usage_time)
+    req(max_val_usage_time())
+    if (input$usage_time > max_val_usage_time()) {
+      showModal(
+        modalDialog(
+          title = strong("Warning!",
+                         style = "font-size:24px;
+                                  color: red;"),
+          p(paste0("Dishwasher run time exceeds the limits (",
+                   max_val_usage_time(),
+                   " hours). Setting to default (2 hours)"
+                   ),
+            style = "font-size:16px"),
+          footer = modalButton("Close"),
+          easyClose = TRUE
+        ))
+      updateNumericInput(session, "usage_time", value = 2)
+      return()
+    }
+  })
 
   df_price <- reactive({
     req(input$daterange)
@@ -61,11 +113,13 @@ app_server <- function(input, output, session) {
     if(input$daterange[1] > input$daterange[2]){
       showModal(
         modalDialog(
-          title = "Error",
-          "First date needs to be earler than second.",
-          easyClose = TRUE,
-          footer = NULL,
-          class = "bg-danger"
+          title = strong("Warning!",
+                         style = "font-size:24px;
+                                  color: red;"),
+          p("First date needs to be earlier than second.",
+          style = "font-size:16px"),
+          footer = modalButton("Close"),
+          easyClose = TRUE
         )
       )
       return()
