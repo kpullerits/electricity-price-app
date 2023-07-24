@@ -5,57 +5,70 @@
 #' @import shiny
 #' @import shinydashboard
 #' @import shinycssloaders
+#' @import shinydashboardPlus
 #' @noRd
 app_ui <- function(request) {
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # Your application UI logic
-    dashboardPage(
+    ui = shinydashboard::dashboardPage(
       skin = "yellow",
-      dashboardHeader(title = "When should I start my dishwasher?",
-                      titleWidth = 400),
-      dashboardSidebar(
-        disable = TRUE
-      ),
-      dashboardBody(
-        fluidRow(
-          column(width = 4,
-                 box(width = NULL,
-                     box(width = NULL,
-                         status="warning",
-                         title = span(icon("calendar"), "Date options"),
-                         uiOutput("daterange")),
-                     box(width = NULL,
-                         status="danger",
-                         title = span(icon("soap"), "Dishwasher options"),
-                         uiOutput("usage_time"),
-                     radioButtons(
-                       "limit_search",
-                       "Limit best time search to next hour and onwards",
-                       c("Yes" = TRUE,
-                         "No" = FALSE),
-                       selected = TRUE
-                     )
-
-                     ),
-                     tags$div(
-                       HTML('<p><a href="https://www.elprisetjustnu.se"><img src="https://ik.imagekit.io/ajdfkwyt/hva-koster-strommen/elpriser-tillhandahalls-av-elprisetjustnu_ttNExOIU_.png" alt="Elpriser tillhandahålls av Elpriset just nu.se" width="200" height="45"></a></p>')
-                     )
-
-                 )),
-          column(width = 8,
+      header = shinydashboard::dashboardHeader(title = "When should I start my dishwasher?",
+                                               titleWidth = 400),
+      sidebar = shinydashboard::dashboardSidebar(disable = TRUE),
+      body = shinydashboard::dashboardBody(fluidRow(
+        column(width = 3,
+               box(
+                 width = NULL,
                  box(
                    width = NULL,
-                   title = "Electricity price per hour",
-                   girafeOutput("plot_price",
-                                width = "100%") %>%
-                     withSpinner(type = 6)
-                 ))
+                   status = "warning",
+                   title = span(icon("bolt"), icon("database"), "Electricity data"),
+                   selectInput("electricity_zone",
+                               label = span(icon("border-all"), "Zone"),
+                               choices = c("SE1" = "SE1",
+                                           "SE2" = "SE2",
+                                           "SE3" = "SE3",
+                                           "SE4" = "SE4"),
+                               selected = "SE4",
+                               multiple = FALSE),
+                   uiOutput("daterange")
+                 ),
+                 box(
+                   width = NULL,
+                   status = "danger",
+                   title = span(icon("soap"), "Dishwasher options"),
+                   uiOutput("usage_time"),
+                   radioButtons(
+                     "limit_search",
+                     label = span(icon("unlock-keyhole"), "Limit best time search to next hour and onwards"),
+                     c("Yes" = TRUE,
+                       "No" = FALSE),
+                     selected = TRUE
+                   )
+                 )
+               )),
+        column(
+          width = 9,
+          box(
+            width = NULL,
+            title = span(icon("plug"), icon("sack-dollar"), "Electricity price per hour"),
+            girafeOutput("plot_price",
+                         width = "100%") %>%
+              withSpinner(type = 6)
+          )
         )
+      ))
+    ),
+    shinydashboardPlus::dashboardFooter(
+      left = HTML(
+        'By Kristjan Pullerits</br><a href="https://github.com/kpullerits/electricity-price-app">https://github.com/kpullerits/electricity-price-app</a>'
+      ),
+      right = HTML(
+        '<p><a href="https://www.elprisetjustnu.se"><img src="https://ik.imagekit.io/ajdfkwyt/hva-koster-strommen/elpriser-tillhandahalls-av-elprisetjustnu_ttNExOIU_.png" alt="Elpriser tillhandahålls av Elpriset just nu.se" width="200" height="45"></a></p>'
       )
     )
-
   )
 }
 
