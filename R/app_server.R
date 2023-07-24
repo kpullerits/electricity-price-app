@@ -113,11 +113,13 @@ app_server <- function(input, output, session) {
     if(input$daterange[1] > input$daterange[2]){
       showModal(
         modalDialog(
-          title = "Error",
-          "First date needs to be earler than second.",
-          easyClose = TRUE,
-          footer = NULL,
-          class = "bg-danger"
+          title = strong("Warning!",
+                         style = "font-size:24px;
+                                  color: red;"),
+          p("First date needs to be earlier than second.",
+          style = "font-size:16px"),
+          footer = modalButton("Close"),
+          easyClose = TRUE
         )
       )
       return()
