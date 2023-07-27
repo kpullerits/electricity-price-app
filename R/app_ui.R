@@ -54,6 +54,7 @@ app_ui <- function(request) {
           box(
             width = NULL,
             title = span(icon("plug"), icon("sack-dollar"), "Electricity price per hour"),
+            htmlOutput("text1"),
             girafeOutput("plot_price",
                          width = "100%") %>%
               withSpinner(type = 6)
