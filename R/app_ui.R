@@ -67,7 +67,8 @@ app_ui <- function(request) {
         'By Kristjan Pullerits</br><a href="https://github.com/kpullerits/electricity-price-app">https://github.com/kpullerits/electricity-price-app</a>'
       ),
       right = HTML(
-        '<p><a href="https://www.elprisetjustnu.se"><img src="https://ik.imagekit.io/ajdfkwyt/hva-koster-strommen/elpriser-tillhandahalls-av-elprisetjustnu_ttNExOIU_.png" alt="Elpriser tillhandahålls av Elpriset just nu.se" width="200" height="45"></a></p>'
+        '<p>Elpriser tillhandahålls av <a href="https://www.elprisetjustnu.se">Elpriset just nu.se</a></p>
+        <p><a href="https://www.elprisetjustnu.se"><img src="https://ik.imagekit.io/ajdfkwyt/hva-koster-strommen/elpriser-tillhandahalls-av-elprisetjustnu_ttNExOIU_.png" alt="Elpriser tillhandahålls av Elpriset just nu.se" width="200" height="45"></a></p>'
       )
     )
   )
