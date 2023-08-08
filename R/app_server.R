@@ -86,7 +86,7 @@ app_server <- function(input, output, session) {
     numericInput(
       "usage_time",
       label = span(icon("stopwatch"), "Dishwasher run time (hours)"),
-      value = 2,
+      value = 3,
       min = 1,
       max = max_val_usage_time(),
       step = 1
