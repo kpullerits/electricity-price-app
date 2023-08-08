@@ -86,7 +86,7 @@ app_server <- function(input, output, session) {
     numericInput(
       "usage_time",
       label = span(icon("stopwatch"), "Dishwasher run time (hours)"),
-      value = 2,
+      value = 3,
       min = 1,
       max = max_val_usage_time(),
       step = 1
@@ -118,6 +118,7 @@ app_server <- function(input, output, session) {
   df_price <- reactive({
     req(input$daterange)
     req(input$electricity_zone)
+    req(system_time())
 
     if(input$daterange[1] > input$daterange[2]){
       showModal(
@@ -174,7 +175,16 @@ app_server <- function(input, output, session) {
         time_start_year = lubridate::year(time_start),
         time_start_month = lubridate::month(time_start),
         time_start_day = lubridate::mday(time_start)
-      )
+      ) %>%
+      mutate(time_now = system_time()) %>%
+      mutate(time_now_floored = floor_date(time_now, unit = "hour")) %>%
+      mutate(min_last_h = lubridate::minute(time_now)) %>%
+      mutate(min_curr_h = 60 - min_last_h) %>%
+      mutate(SEK_per_kwh_last_h = SEK_per_kWh * min_last_h / 60,
+             SEK_per_kwh_curr_h = SEK_per_kWh * min_curr_h / 60) %>%
+      mutate(time_start_from_time_now = time_start + minutes(min_last_h)) %>%
+      mutate(hours_until_start = difftime(time_start_from_time_now, floor_date(time_now, unit = "minute"), units = "hours"))
+
     return(out_df)
   })
 
@@ -182,6 +192,7 @@ app_server <- function(input, output, session) {
     req(df_price())
     req(input$usage_time)
     req(df_best_time())
+    req(df_best_time_from_now())
 
     df_for_plot <- df_price() %>%
       mutate(tooltip = paste0(
@@ -214,7 +225,20 @@ app_server <- function(input, output, session) {
         x = NULL,
         y = NULL,
         fill = "mediumseagreen",
-        col = "black"
+        col = "black",
+        alpha = 0.75
+      ) +
+      annotate(
+        "rect",
+        xmin = df_best_time_from_now()[1]$time_start_from_time_now,
+        xmax = df_best_time_from_now()[1]$time_end_from_time_now,
+        ymin = -Inf,
+        ymax =  Inf,
+        x = NULL,
+        y = NULL,
+        fill = "orange",
+        col = "black",
+        alpha = 0.75
       ) +
       geom_rect_interactive(
         aes(
@@ -250,6 +274,16 @@ app_server <- function(input, output, session) {
           tooltip = paste0("Mean SEK/kWh: ", signif(rolling_mean_SEK_per_kWh, digits = 3))
         )
       ) +
+      geom_hline_interactive(
+        data = df_best_time_from_now()[1],
+        color = "orange",
+        size = 1,
+        aes(
+          yintercept = SEK_per_kWh_usage_time,
+          data_id = SEK_per_kWh_usage_time,
+          tooltip = paste0("Mean SEK/kWh: ", signif(SEK_per_kWh_usage_time, digits = 3))
+        )
+      ) +
       annotate(
         "text",
         label = paste0("Best time to start your\ndevice: ", first_best_time$time_start),
@@ -279,6 +313,18 @@ app_server <- function(input, output, session) {
         hjust = 0,
         vjust = 1,
         col = "mediumseagreen"
+      ) +
+      annotate(
+        "text",
+        label = paste0("Mean price, best time, ", df_best_time_from_now()[1]$hours_until_start,
+                       "h from now: "
+                       ,signif(df_best_time_from_now()[1]$SEK_per_kWh_usage_time , digits = 3), " SEK/kWh"),
+        x =  df_best_time_from_now()[1]$time_start_from_time_now + minutes(30),
+        y = df_best_time_from_now()[1]$SEK_per_kWh_usage_time,
+        size = 4,
+        hjust = 0,
+        vjust = 1,
+        col = "orange"
       ) +
       theme_classic()+
       labs(
@@ -340,6 +386,73 @@ app_server <- function(input, output, session) {
     df_best_time_out <- df_best_time_out %>%
       arrange(rolling_mean_SEK_per_kWh)
   })
+
+  df_best_time_from_now <- reactive({
+    req(input$daterange)
+    req(df_price())
+    req(input$usage_time)
+    req(input$limit_search)
+    req(system_time())
+
+    usage_time = input$usage_time
+    df_best_time_out <- df_price() %>%
+      mutate(time_end_from_time_now = time_start_from_time_now + usage_time)
+
+    if(input$limit_search){
+      df_best_time_out <- df_best_time_out %>%
+        filter(time_start >= time_now_floored)
+    }
+
+    best_time_list <- list()
+    for (i in 1:(nrow(df_best_time_out) - usage_time)) {
+      df_loop <- df_best_time_out %>%
+        slice(i: (i + usage_time))
+      SEK_per_kWh_vctr <- df_loop %>%
+        pull(SEK_per_kWh)
+
+      sum_SEK_per_kWh <- sum(c(first(df_loop$SEK_per_kwh_curr_h), SEK_per_kWh_vctr[-c(1, length(SEK_per_kWh_vctr))], last(df_loop$SEK_per_kwh_last_h)))
+      SEK_per_kWh_usage_time <- sum_SEK_per_kWh / (usage_time)
+
+      best_time_list[[i]] <- tibble(
+        SEK_per_kWh_usage_time = SEK_per_kWh_usage_time,
+        time_start_from_time_now = first(df_loop$time_start_from_time_now),
+        hours_until_start = first(df_loop$hours_until_start),
+        time_end_from_time_now = last(df_loop$time_end_from_time_now)
+      )
+
+    }
+
+    best_time_df <- data.table::rbindlist(best_time_list)
+    df_best_time_out <- best_time_df %>%
+      arrange(SEK_per_kWh_usage_time)
+  })
+
+  output$best_time_df_table <- renderTable({
+    req(df_best_time_from_now())
+    df_best_time_from_now()
+  })
+
+  output$text_start_device <- renderText({
+
+    req(df_best_time())
+    req(df_best_time_from_now())
+
+    first_best_time <- df_best_time() %>%
+      slice(1) %>%
+      mutate(time_end_best_time = time_start + hours(input$usage_time))
+
+
+    paste0("You should start you device in ",
+          "<font color=\"#FFA500\"><b>",
+          as.integer(df_best_time_from_now()[1]$hours_until_start),
+          "</b></font> hours, at
+          <font color=\"#FFA500\"><b>",
+          df_best_time_from_now()[1]$time_start_from_time_now,
+          "</b></font>.</br>
+          Best full hour to start: ",
+          "<font color=\"#3CB371\"><b>",
+          first_best_time$time_start,
+          "</b></font>.") })
 
 
 }
