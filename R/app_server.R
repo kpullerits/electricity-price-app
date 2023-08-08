@@ -193,7 +193,7 @@ app_server <- function(input, output, session) {
     req(input$usage_time)
     req(df_best_time())
     req(df_best_time_from_now())
-# browser()
+
     df_for_plot <- df_price() %>%
       mutate(tooltip = paste0(
         "From ", time_start, " to ", time_end, "<br/>",
@@ -421,7 +421,7 @@ app_server <- function(input, output, session) {
       )
 
     }
-    # browser()
+
     best_time_df <- data.table::rbindlist(best_time_list)
     df_best_time_out <- best_time_df %>%
       arrange(SEK_per_kWh_usage_time)
@@ -432,7 +432,7 @@ app_server <- function(input, output, session) {
     df_best_time_from_now()
   })
 
-  output$text1 <- renderText({
+  output$text_start_device <- renderText({
 
     req(df_best_time())
     req(df_best_time_from_now())
